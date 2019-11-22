@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Werror=main -Wformat -Wmain -Wuninitialized -Winit-self -Wnon-virtual-dtor -Woverloaded-virtual -Wreorder   CMakeFiles/i2c_cpp.dir/i2c.cpp.o  -o i2c_cpp -rdynamic ../../src/libmraa.so.2.0.0 -lstdc++ -lm -lpthread -lrt -Wl,-rpath,/home/vineesha/Documents/mraa/build/src 

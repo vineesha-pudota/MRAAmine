@@ -1,0 +1,341 @@
+From 1e12f54cac3d74acf83974e85b83e51e48e7a282 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Thu, 17 Oct 2019 15:10:34 +0530
+Subject: [PATCH 2/2] Add examples for pico board
+
+Signed-off-by: Your Name <you@example.com>
+---
+ examples/c/CMakeLists.txt |  4 ++++
+ examples/c/button.c       | 29 +++++++++++++++++++++++++++++
+ examples/c/button_gpio.c  | 41 +++++++++++++++++++++++++++++++++++++++++
+ examples/c/gpio.c         | 38 ++++----------------------------------
+ examples/c/pwm.c          |  3 ++-
+ examples/c/uart.c         | 44 +++++++++++++++++++++++++++++++++-----------
+ src/pwm/pwm.c             |  4 ++--
+ 7 files changed, 115 insertions(+), 48 deletions(-)
+ create mode 100644 examples/c/button.c
+ create mode 100644 examples/c/button_gpio.c
+
+diff --git a/examples/c/CMakeLists.txt b/examples/c/CMakeLists.txt
+index 0821810..b4c5dd0 100644
+--- a/examples/c/CMakeLists.txt
++++ b/examples/c/CMakeLists.txt
+@@ -1,5 +1,7 @@
+ add_executable(aio aio.c)
+ add_executable(gpio gpio.c)
++add_executable(button_gpio button_gpio.c)
++add_executable(button button.c)
+ add_executable(gpio_advanced gpio_advanced.c)
+ add_executable(hellomraa hellomraa.c)
+ add_executable(i2c_hmc5883l i2c_hmc5883l.c)
+@@ -18,6 +20,8 @@ include_directories(${PROJECT_SOURCE_DIR}/api/mraa)
+ 
+ target_link_libraries(aio mraa)
+ target_link_libraries(gpio mraa)
++target_link_libraries(button_gpio mraa)
++target_link_libraries(button mraa)
+ target_link_libraries(gpio_advanced mraa)
+ target_link_libraries(hellomraa mraa)
+ target_link_libraries(i2c_hmc5883l mraa m)
+diff --git a/examples/c/button.c b/examples/c/button.c
+new file mode 100644
+index 0000000..ae1b4aa
+--- /dev/null
++++ b/examples/c/button.c
+@@ -0,0 +1,29 @@
++#include <mraa.h>
++#include <inttypes.h>
++
++#define BTN_PIN      52       /**< Button is connected to this pin */
++
++
++int main(void)
++{
++	mraa_gpio_context      btnPin;  /* Will be used to represnt the button pin */
++
++	uint32_t               status;   /* Used to toggle the LED */
++	uint32_t               btnState; /* Used to capture the state of the button */
++	
++	mraa_init();
++
++	btnPin = mraa_gpio_init(BTN_PIN);
++
++	mraa_gpio_dir(btnPin, MRAA_GPIO_IN);
++
++	while(1)
++	{
++		status = mraa_gpio_read(btnPin);
++//		printf("STATUS = %d..\n\n",status);
++		if(status == 0)
++			printf("button pressed \n");
++	}
++
++	return 0;
++}
+diff --git a/examples/c/button_gpio.c b/examples/c/button_gpio.c
+new file mode 100644
+index 0000000..b782b5e
+--- /dev/null
++++ b/examples/c/button_gpio.c
+@@ -0,0 +1,41 @@
++#include <mraa.h>
++#include <inttypes.h>
++
++#define LED_PIN      49       /**< The pin where the LED is connected */
++#define BTN_PIN      52       /**< Button is connected to this pin */
++
++
++int main(void)
++{
++  mraa_gpio_context      ledPin;  /* Will be used to represnt the LED pin */
++  mraa_gpio_context      btnPin;  /* Will be used to represnt the button pin */
++
++  uint32_t               status;   /* Used to toggle the LED */
++  uint32_t               btnState; /* Used to capture the state of the button */
++
++  mraa_init();
++
++  ledPin = mraa_gpio_init(LED_PIN);
++  btnPin = mraa_gpio_init(BTN_PIN);
++
++  mraa_gpio_dir(ledPin, MRAA_GPIO_OUT);
++  mraa_gpio_dir(btnPin, MRAA_GPIO_IN);
++
++while(1)
++{
++  status = mraa_gpio_read(btnPin);
++  printf("STATUS = %d..\n\n",status);
++    if(status == 0)
++    {
++        mraa_gpio_write(ledPin, 0);    
++        printf("LED ON \n");
++    }
++    else
++    {
++        printf("LED OFF \n");
++        mraa_gpio_write(ledPin, 1); // active low 0 is on the led
++    }
++}
++
++return 0;
++}
+diff --git a/examples/c/gpio.c b/examples/c/gpio.c
+index 793a4aa..d90d20e 100644
+--- a/examples/c/gpio.c
++++ b/examples/c/gpio.c
+@@ -37,8 +37,7 @@
+ #include "mraa/gpio.h"
+ 
+ /* gpio declaration */
+-#define GPIO_PIN_1 23
+-#define GPIO_PIN_2 24
++#define GPIO_PIN_1 49
+ 
+ volatile sig_atomic_t flag = 1;
+ 
+@@ -55,7 +54,7 @@ int
+ main(void)
+ {
+     mraa_result_t status = MRAA_SUCCESS;
+-    mraa_gpio_context gpio_1, gpio_2;
++    mraa_gpio_context gpio_1;
+ 
+     /* install signal handler */
+     signal(SIGINT, sig_handler);
+@@ -72,46 +71,23 @@ main(void)
+         return EXIT_FAILURE;
+     }
+ 
+-    /* initialize GPIO pin */
+-    gpio_2 = mraa_gpio_init(GPIO_PIN_2);
+-    if (gpio_2 == NULL) {
+-        fprintf(stderr, "Failed to initialize GPIO %d\n", GPIO_PIN_2);
+-        mraa_deinit();
+-        return EXIT_FAILURE;
+-    }
+-
+     /* set GPIO to output */
+     status = mraa_gpio_dir(gpio_1, MRAA_GPIO_OUT);
+     if (status != MRAA_SUCCESS) {
+         goto err_exit;
+     }
+ 
+-    /* set GPIO to output */
+-    status = mraa_gpio_dir(gpio_2, MRAA_GPIO_OUT);
+-    if (status != MRAA_SUCCESS) {
+-        goto err_exit;
+-    }
+-
+     /* toggle both GPIO's */
+     while (flag) {
+-        status = mraa_gpio_write(gpio_1, 1);
++        status = mraa_gpio_write(gpio_1, 0);
+         if (status != MRAA_SUCCESS) {
+             goto err_exit;
+         }
+ 
+-        status = mraa_gpio_write(gpio_2, 0);
+-        if (status != MRAA_SUCCESS) {
+-            goto err_exit;
+-        }
+ 
+         sleep(1);
+ 
+-        status = mraa_gpio_write(gpio_1, 0);
+-        if (status != MRAA_SUCCESS) {
+-            goto err_exit;
+-        }
+-
+-        status = mraa_gpio_write(gpio_2, 1);
++        status = mraa_gpio_write(gpio_1, 1);
+         if (status != MRAA_SUCCESS) {
+             goto err_exit;
+         }
+@@ -125,12 +101,6 @@ main(void)
+         goto err_exit;
+     }
+ 
+-    /* close GPIO */
+-    status = mraa_gpio_close(gpio_2);
+-    if (status != MRAA_SUCCESS) {
+-        goto err_exit;
+-    }
+-
+     //! [Interesting]
+     /* deinitialize mraa for the platform (not needed most of the times) */
+     mraa_deinit();
+diff --git a/examples/c/pwm.c b/examples/c/pwm.c
+index 7dd305c..a6c08ca 100644
+--- a/examples/c/pwm.c
++++ b/examples/c/pwm.c
+@@ -35,7 +35,7 @@
+ #include "mraa/pwm.h"
+ 
+ /* PWM declaration */
+-#define PWM 3
++#define PWM 20
+ 
+ /* PWM period in us */
+ #define PWM_FREQ 200
+@@ -65,6 +65,7 @@ main(void)
+     //! [Interesting]
+     pwm = mraa_pwm_init(PWM);
+     if (pwm == NULL) {
++        printf("pwm=%d\n",pwm);
+         fprintf(stderr, "Failed to initialize PWM\n");
+         mraa_deinit();
+         return EXIT_FAILURE;
+diff --git a/examples/c/uart.c b/examples/c/uart.c
+index 3b9ae95..8f1a090 100644
+--- a/examples/c/uart.c
++++ b/examples/c/uart.c
+@@ -1,8 +1,6 @@
+ /*
+- * Author: Thomas Ingleby <thomas.c.ingleby@intel.com>
+- * Author: Brendan Le Foll <brendan.le.foll@intel.com>
+- * Contributors: Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>
+- * Copyright (c) 2014, 2015 Intel Corporation.
++ * Author: Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>
++ * Copyright (c) 2018, Linaro Ltd.
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining
+  * a copy of this software and associated documentation files (the
+@@ -36,7 +34,13 @@
+ /* mraa header */
+ #include "mraa/uart.h"
+ 
+-#define UART 0
++#ifndef FALSE
++#define FALSE 0
++#define TRUE (!FALSE)
++#endif
++
++/* UART port name */
++const char* dev_path = "/dev/ttymxc1";
+ 
+ volatile sig_atomic_t flag = 1;
+ 
+@@ -52,40 +56,58 @@ sig_handler(int signum)
+ int
+ main(int argc, char** argv)
+ {
++    mraa_result_t status = MRAA_SUCCESS;
+     mraa_uart_context uart;
+     char buffer[] = "Hello Mraa!";
+ 
++    int baudrate = 9600, stopbits = 1, databits = 8;
++    mraa_uart_parity_t parity = MRAA_UART_PARITY_NONE;
++    unsigned int ctsrts = FALSE, xonxoff = FALSE;
++    const char* name = NULL;
++
+     /* install signal handler */
+     signal(SIGINT, sig_handler);
+ 
+-    /* initialize mraa for the platform (not needed most of the times) */
++    /* initialize mraa for the platform (not needed most of the time) */
+     mraa_init();
+ 
+     //! [Interesting]
+-    /* initialize UART */
+-    uart = mraa_uart_init(UART);
++    /* initialize uart */
++    uart = mraa_uart_init_raw(dev_path);
+     if (uart == NULL) {
+         fprintf(stderr, "Failed to initialize UART\n");
++        return EXIT_FAILURE;
++    }
++
++    /* set serial port parameters */
++    status =
++    mraa_uart_settings(-1, &dev_path, &name, &baudrate, &databits, &stopbits, &parity, &ctsrts, &xonxoff);
++    if (status != MRAA_SUCCESS) {
+         goto err_exit;
+     }
+ 
+     while (flag) {
+-        /* send data through UART */
++        /* send data through uart */
+         mraa_uart_write(uart, buffer, sizeof(buffer));
+ 
+         sleep(1);
+     }
+ 
+-    /* stop UART */
++    /* stop uart */
+     mraa_uart_stop(uart);
+ 
+     //! [Interesting]
+-    /* deinitialize mraa for the platform (not needed most of the times) */
++    /* deinitialize mraa for the platform (not needed most of the time) */
+     mraa_deinit();
+ 
+     return EXIT_SUCCESS;
+ 
+ err_exit:
++    mraa_result_print(status);
++
++    /* stop uart */
++    mraa_uart_stop(uart);
++
+     /* deinitialize mraa for the platform (not needed most of the times) */
+     mraa_deinit();
+ 
+diff --git a/src/pwm/pwm.c b/src/pwm/pwm.c
+index e3be80e..65b9db2 100644
+--- a/src/pwm/pwm.c
++++ b/src/pwm/pwm.c
+@@ -239,9 +239,9 @@ mraa_pwm_init(int pin)
+         return NULL;
+     }
+ 
+-    if (board->adv_func->pwm_init_replace != NULL) {
++/*    if (board->adv_func->pwm_init_replace != NULL) {
+         return board->adv_func->pwm_init_replace(pin);
+-    }
++    }*/
+     if (board->adv_func->pwm_init_internal_replace != NULL) {
+         return board->adv_func->pwm_init_internal_replace(board->adv_func, pin);
+     }
+-- 
+2.1.4
+

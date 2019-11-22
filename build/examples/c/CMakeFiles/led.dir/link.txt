@@ -1,0 +1,1 @@
+/usr/bin/cc   -Wall -Werror=main -Wformat -Wmain -Wuninitialized -Winit-self -Werror=implicit -Werror=missing-parameter-type   CMakeFiles/led.dir/led.c.o  -o led -rdynamic ../../src/libmraa.so.2.0.0 -lpthread -lrt -Wl,-rpath,/home/vineesha/Documents/mraa/build/src 

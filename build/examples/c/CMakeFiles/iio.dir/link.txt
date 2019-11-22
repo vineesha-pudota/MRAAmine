@@ -1,0 +1,1 @@
+/usr/bin/cc   -Wall -Werror=main -Wformat -Wmain -Wuninitialized -Winit-self -Werror=implicit -Werror=missing-parameter-type   CMakeFiles/iio.dir/iio.c.o  -o iio -rdynamic ../../src/libmraa.so.2.0.0 -lpthread -lrt -Wl,-rpath,/home/vineesha/Documents/mraa/build/src 
